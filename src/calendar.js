@@ -5141,7 +5141,55 @@ function calendarJs( elementOrId, options, searchOptions ) {
 
                 _element_View_Timeline_EventsShown.push( eventDetails );
             }
+
+            adjustTimelineViewRowsThatOverlap();
         }
+    }
+
+    function adjustTimelineViewRowsThatOverlap() {
+        for ( var storageAxisName in _element_View_Timeline_Contents_Groups_Rows_Cache ) {
+            if ( _element_View_Timeline_Contents_Groups_Rows_Cache.hasOwnProperty( storageAxisName ) ) {
+                const timelineRowItems = _element_View_Timeline_Contents_Groups_Rows_Cache[ storageAxisName ],
+                    events = [].slice.call( timelineRowItems.getElementsByClassName( "event" ) ),
+                    eventsLength = events.length,
+                    lanesRights = [];
+
+                var lanesHeight = 0;
+
+                if ( eventsLength > 1 ) {
+                    events.sort( sortTimelineEventElementsByOffsetLeft );
+
+                    for ( var eventIndex = 0; eventIndex < eventsLength; eventIndex++ ) {
+                        const event = events[ eventIndex ],
+                            lanesLength = lanesRights.length;
+
+                        var laneIndex = 0;
+
+                        while ( laneIndex < lanesLength && ( lanesRights[ laneIndex ] - _options.spacing ) > event.offsetLeft ) {
+                            laneIndex++;
+                        }
+
+                        lanesRights[ laneIndex ] = event.offsetLeft + event.offsetWidth;
+                        event.style.top = ( _options.spacing + ( laneIndex * ( event.offsetHeight + _options.spacing ) ) ) + "px";
+                        lanesHeight = _parameter_Math.max( lanesHeight, event.offsetTop + event.offsetHeight );
+                    }
+
+                    if ( lanesRights.length > 1 ) {
+                        const rowHeight = lanesHeight + _options.spacing;
+
+                        if ( rowHeight > timelineRowItems.offsetHeight ) {
+                            timelineRowItems.style.height = rowHeight + "px";
+                        }
+
+                        timelineRowItems.parentNode.firstChild.style.height = timelineRowItems.offsetHeight + "px";
+                    }
+                }
+            }
+        }
+    }
+
+    function sortTimelineEventElementsByOffsetLeft( event1, event2 ) {
+        return event1.offsetLeft - event2.offsetLeft;
     }
 
     function buildTimelineViewColumnHeights() {
@@ -5154,7 +5202,11 @@ function calendarJs( elementOrId, options, searchOptions ) {
             var timelineRowBorderWidth = getStyleValueByName( timelineRows[ 0 ], "border-bottom-width" ),
                 headerBorderWidth = getStyleValueByName( _element_View_Timeline_Contents_Header, "border-bottom-width" );
 
-            columnHeight = ( timelineRowsLength * ( timelineRows[ 0 ].offsetHeight - timelineRowBorderWidth ) ) + ( _element_View_Timeline_Contents_Header.offsetHeight - headerBorderWidth );
+            columnHeight = _element_View_Timeline_Contents_Header.offsetHeight - headerBorderWidth;
+
+            for ( var timelineRowIndex = 0; timelineRowIndex < timelineRowsLength; timelineRowIndex++ ) {
+                columnHeight += timelineRows[ timelineRowIndex ].offsetHeight - timelineRowBorderWidth;
+            }
         }
             
         for ( var columnIndex = 0; columnIndex < columnsLength; columnIndex++ ) {
