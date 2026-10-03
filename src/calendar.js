@@ -8524,52 +8524,61 @@ function calendarJs( elementOrId, options, searchOptions ) {
         if ( eventsLength > 1 ) {
             events.sort( sortOverlappingEventElementsByOffsetTop );
 
-            for ( var eventIndex1 = 0; eventIndex1 < eventsLength; eventIndex1++ ) {
-                var event1 = events[ eventIndex1 ];
-    
-                for ( var eventIndex2 = 0; eventIndex2 < eventsLength; eventIndex2++ ) {
-                    if ( eventIndex2 !== eventIndex1 ) {
-                        var event2 = events[ eventIndex2 ],
-                            overlaps = doEventElementsOverlap( event1, event2 );
+            var cluster = [],
+                clusterBottom = 0;
 
-                        if ( overlaps ) {
-                            var event1Position = getString( event1.getAttribute( "event-position" ) ),
-                                event2Position = getString( event2.getAttribute( "event-position" ) );
+            for ( var eventIndex = 0; eventIndex < eventsLength; eventIndex++ ) {
+                const event = events[ eventIndex ];
 
-                            if ( event1Position === _string.empty && event2Position === _string.empty ) {
-                                setOverlappingEventWidth( event1 );
-                                setOverlappingEventWidth( event2 );
-                                setOverlappingEventLeft( event2, event1 );
+                if ( cluster.length > 0 && event.offsetTop >= clusterBottom ) {
+                    setOverlappingEventsClusterLayout( cluster );
 
-                                event1.setAttribute( "event-position", "left" );
-                                event2.setAttribute( "event-position", "right" );
-                            
-                            } else if ( event1Position === _string.empty && event2Position === "right" ) {
-                                setOverlappingEventWidth( event1 );
-
-                                event1.setAttribute( "event-position", "left" );
-                                event2.setAttribute( "event-position", "right" );
-                            
-                            } else if ( event1Position === _string.empty && event2Position === "left" ) {
-                                setOverlappingEventLeft( event1, event2 );
-                                setOverlappingEventWidth( event1 );
-
-                                event1.setAttribute( "event-position", "right" );
-                                event2.setAttribute( "event-position", "left" );
-                            }
-                        }
-                    }
+                    cluster = [];
+                    clusterBottom = 0;
                 }
+
+                cluster.push( event );
+                clusterBottom = Math.max( clusterBottom, event.offsetTop + event.offsetHeight );
             }
+
+            setOverlappingEventsClusterLayout( cluster );
         }
     }
 
-    function setOverlappingEventWidth( event ) {
-        event.style.width = ( event.offsetWidth / 2 ) - ( ( _options.spacing * 3 ) + _options.spacing / 4 ) + "px";
-    }
+    function setOverlappingEventsClusterLayout( cluster ) {
+        const clusterLength = cluster.length;
 
-    function setOverlappingEventLeft( event1, event2 ) {
-        event1.style.left = ( event2.offsetLeft + event2.offsetWidth + _options.spacing ) + "px";
+        if ( clusterLength > 1 ) {
+            const columnsBottoms = [],
+                columnIndexes = [],
+                baseLeft = cluster[ 0 ].offsetLeft,
+                baseWidth = cluster[ 0 ].offsetWidth;
+
+            for ( var eventIndex = 0; eventIndex < clusterLength; eventIndex++ ) {
+                const event = cluster[ eventIndex ],
+                    columnsLength = columnsBottoms.length;
+
+                var columnIndex = 0;
+
+                while ( columnIndex < columnsLength && columnsBottoms[ columnIndex ] > event.offsetTop ) {
+                    columnIndex++;
+                }
+
+                columnsBottoms[ columnIndex ] = event.offsetTop + event.offsetHeight;
+                columnIndexes.push( columnIndex );
+            }
+
+            const columnsCount = columnsBottoms.length,
+                gap = _options.spacing,
+                columnWidth = ( baseWidth - ( gap * ( columnsCount - 1 ) ) ) / columnsCount;
+
+            for ( var clusterIndex = 0; clusterIndex < clusterLength; clusterIndex++ ) {
+                const clusterEvent = cluster[ clusterIndex ];
+
+                clusterEvent.style.width = columnWidth - ( _options.spacing * 3 ) + "px";
+                clusterEvent.style.left = ( baseLeft + ( columnIndexes[ clusterIndex ] * ( columnWidth + gap ) ) ) + "px";
+            }
+        }
     }
 
     function sortOverlappingEventElementsByOffsetTop( event1, event2 ) {
@@ -8581,28 +8590,6 @@ function calendarJs( elementOrId, options, searchOptions ) {
             result = 1;
         }
 
-        return result;
-    }
-    
-    function doEventElementsOverlap( element1, element2 ) {
-        var result = true,
-            offsetLeft1 = element1.offsetLeft,
-            offsetTop1 = element1.offsetTop,
-            height1 = element1.offsetHeight,
-            width1 = element1.offsetWidth,
-            topPlusHeight1 = offsetTop1 + height1,
-            leftPlusWidth1 = offsetLeft1 + width1,
-            offsetLeft2 = element2.offsetLeft,
-            offsetTop2 = element2.offsetTop,
-            height2 = element2.offsetHeight,
-            width2 = element2.offsetWidth,
-            topPlusHeight2 = offsetTop2 + height2,
-            leftPlusWidth2 = offsetLeft2 + width2;
-    
-        if ( topPlusHeight1 < offsetTop2 || offsetTop1 > topPlusHeight2 || leftPlusWidth1 < offsetLeft2 || offsetLeft1 > leftPlusWidth2 ) {
-            result = false;
-        }
-    
         return result;
     }
 
