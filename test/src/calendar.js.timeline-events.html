@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Calendar.js - Timeline Events</title>
+        <link rel="stylesheet" href="../css/styles.css">
+        <link rel="stylesheet" href="../../dist/calendar.js.css">
+        <script src="../../src/calendar.js"></script>
+    </head>
+
+    <body>
+        <div class="header">
+            <h1 id="header">Calendar.js - Timeline Events</h1>
+            <p>Events in the timeline view can be clicked, double-clicked (edit dialog) and right-clicked (context menu), including the events on the first line of each row.</p>
+        </div>
+
+        <div class="contents">
+            <div id="calendar" style="max-width: 800px;"></div>
+            <p id="clicked">Last clicked event: (none)</p>
+        </div>
+    </body>
+
+    <script>
+        const calendarInstance = new calendarJs( "calendar", {
+            viewToOpenOnFirstLoad: "timeline",
+            events: {
+                onEventClick: function( event ) {
+                    document.getElementById( "clicked" ).innerText = "Last clicked event: " + event.title;
+                }
+            }
+        } );
+
+        document.title += " v" + calendarInstance.getVersion();
+
+        function createEvent( title, fromHour, toHour ) {
+            const today = new Date(),
+                from = new Date( today.getFullYear(), today.getMonth(), today.getDate(), fromHour, 0 ),
+                to = new Date( today.getFullYear(), today.getMonth(), today.getDate(), toHour, 0 );
+
+            return { from: from, to: to, title: title };
+        }
+
+        calendarInstance.addEvents( [
+            createEvent( "Event 1", 9, 10 ),
+            createEvent( "Event 2", 11, 12 ),
+            createEvent( "Event 3", 13, 14 )
+        ] );
+    </script>
+</html>

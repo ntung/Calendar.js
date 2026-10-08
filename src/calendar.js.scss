@@ -1867,6 +1867,7 @@ div.calendar {
                     div.timeline-row-item-spacing {
                         background-color: transparent !important;
                         border-right: var(--calendar-js-spacing-border-size) solid transparent !important;
+                        pointer-events: none;
                     }
 
                     @import "foundation/view-event";
